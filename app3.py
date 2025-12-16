@@ -619,21 +619,7 @@ def main():
             price_forecasts_df = pd.DataFrame(price_forecasts, index=out_of_sample.index)
             st.dataframe(price_forecasts_df.head(10), use_container_width=True)
 
-            fig, ax = plt.subplots(figsize=(16, 6))
-            for col in price_forecasts_df.columns:
-                ax.plot(price_forecasts_df.index, price_forecasts_df[col], linewidth=2, label=col)
 
-            ax.set_xticks(price_forecasts_df.index)
-            ax.set_xticklabels(price_forecasts_df.index, rotation=45, ha="right")
-            ax.set_xlabel("Date")
-            ax.set_ylabel("Forecasted price")
-            ax.set_title("ARIMA forecast paths (out-of-sample)")
-            ax.legend()
-            ax.tick_params(axis="x", rotation=45)
-            
-            fig.tight_layout()
-            st.pyplot(fig)
-            plt.close(fig)
 
 if __name__ == "__main__":
     main()
