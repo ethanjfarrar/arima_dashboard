@@ -115,12 +115,27 @@ def GARCH_modelling(data_2, in_sample):
 # %matplotlib inline
 
 def plot_garch_results(garch_results):
-    for col, garch_fit in garch_results.items():
-        fig = garch_fit.plot()
-        fig.suptitle(f"GARCH(1,1) diagnostics — {col}", y=1.02)
+    for col, fit in garch_results.items():
+        fig, axes = plt.subplots(3, 1, figsize=(12, 8), sharex=True)
+        
+        axes[0].plot(fit.conditional_volatility)
+        axes[0].set_title("Conditional Volatility")
+
+        std_resid = fit.std_resid.dropna()
+        axes[1].plot(std_resid)
+        axes[1].axhline(0, linestyle="--")
+        axes[1].set_title("Standardised Residuals")
+
+
+        axes[2].plot(std_resid**2)
+        axes[2].set_title("Squared Standardised Residuals")
+
+        fig.suptitle(f"GARCH(1,1) Diagnostics — {col}", fontsize=14)
+        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
 
         st.pyplot(fig)
         plt.close(fig)
+
 
 
 def plot_garch_variance_forecasts(var_forecasted_df):
