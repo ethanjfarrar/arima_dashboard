@@ -576,17 +576,20 @@ def main():
 
         # Pick best (p,q) by minimum AIC per series (same model family as notebook grid)
         best = (
-            arima_grid.dropna(subset=["AIC"]).sort_values("AIC").groupby("Series", as_index=False).first()
+            arima_grid
+            .dropna(subset=["AIC"])
+            .sort_values("AIC")
+            .groupby("Series", as_index=False)
+            .first()
         )
         st.subheader("Selected orders (min AIC)")
         st.dataframe(best, use_container_width=True)
 
         # Build ARIMA specs for original price series
-        arima_specs = {}
-        for _, row in best.iterrows():
-            series = row["Series"]
-            base = series.replace("_diff", "")
-            arima_specs[base] = (int(row["AR(p)"]), 0, int(row["MA(q)"]))
+        arima_specs = {
+            row["Series"]: (int(row["AR(p)"]), 0, int(row["MA(q)"]))
+            for _, row in best.iterrows()
+        }
   # Ensure we have an out_of_sample horizon consistent with the notebook split
         data_2_for_h = compute_rets(data)
         data_2_for_h.dropna(inplace=True)
