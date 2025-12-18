@@ -582,14 +582,28 @@ def main():
             .groupby("Series", as_index=False)
             .first()
         )
-        st.subheader("Selected orders (min AIC)")
+        
+        st.subheader("Selected ARMA orders (min AIC)")
         st.dataframe(best, use_container_width=True)
-
-        # Build ARIMA specs for original price series
+        
+        # Build ARMA specs (d = 0 because data is differenced)
         arima_specs = {
             row["Series"]: (int(row["AR(p)"]), 0, int(row["MA(q)"]))
             for _, row in best.iterrows()
         }
+
+# ================================
+# Fit ARMA models on differenced data
+# ================================
+
+arima_fits = {}
+
+for series, order in arima_specs.items():
+    try:
+        model = ARIMA(data[series], order=order)
+        arima_fits[series] = model.fit()
+    except Exception as e:
+        st.error(f"ARMA fit failed for {series}: {e}")
   # Ensure we have an out_of_sample horizon consistent with the notebook split
         data_2_for_h = compute_rets(data)
         data_2_for_h.dropna(inplace=True)
