@@ -250,7 +250,7 @@ def arima_running(data_diff, diff_stock_cols):
                     "Series": col,
                     "AR(p)": p,
                     "MA(q)": q,
-                    "I": 1,
+                    "I": 0,
                     "AIC": arima_fitted.aic,
                     "BIC": arima_fitted.bic
                     })
@@ -259,7 +259,7 @@ def arima_running(data_diff, diff_stock_cols):
                         "Series": col,
                         "AR(p)": p,
                         "MA(q)": q,
-                        "I": 1,
+                        "I": 0,
                         "AIC": None,
                         "BIC": None
                     })
@@ -586,7 +586,7 @@ def main():
         for _, row in best.iterrows():
             series = row["Series"]
             base = series.replace("_diff", "")
-            arima_specs[base] = (int(row["AR(p)"]), 1, int(row["MA(q)"]))
+            arima_specs[base] = (int(row["AR(p)"]), 0, int(row["MA(q)"]))
   # Ensure we have an out_of_sample horizon consistent with the notebook split
         data_2_for_h = compute_rets(data)
         data_2_for_h.dropna(inplace=True)
