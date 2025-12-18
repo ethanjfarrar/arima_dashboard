@@ -575,9 +575,25 @@ def main():
         st.dataframe(arima_grid, use_container_width=True)
 
         # Pick best (p,q) by minimum AIC per series (same model family as notebook grid)
-        best = (
-            arima_grid.dropna(subset=["AIC"]).sort_values("AIC").groupby("Series", as_index=False).first()
-        )
+        AIC_TOL = 1e-2  # tolerance consistent with notebook-style judgement
+
+        best_rows = []
+        
+        for series, g in arima_grid.dropna(subset=["AIC"]).groupby("Series"):
+            aic_min = g["AIC"].min()
+            
+            candidates = g[g["AIC"] <= aic_min + AIC_TOL].copy()
+            candidates["complexity"] = candidates["AR(p)"] + candidates["MA(q)"]
+            
+            best_row = (
+                candidates
+                .sort_values(["complexity", "AR(p)", "MA(q)"])
+                .iloc[0]
+            )
+            
+            best_rows.append(best_row)
+        
+        best = pd.DataFrame(best_rows)
         st.subheader("Selected orders (min AIC)")
         st.dataframe(best, use_container_width=True)
 
