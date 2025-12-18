@@ -575,33 +575,18 @@ def main():
         st.dataframe(arima_grid, use_container_width=True)
 
         # Pick best (p,q) by minimum AIC per series (same model family as notebook grid)
-        AIC_TOL = 1e-2  # tolerance consistent with notebook-style judgement
-
-        best_rows = []
-        
-        for series, g in arima_grid.dropna(subset=["AIC"]).groupby("Series"):
-            aic_min = g["AIC"].min()
-            
-            candidates = g[g["AIC"] <= aic_min + AIC_TOL].copy()
-            candidates["complexity"] = candidates["AR(p)"] + candidates["MA(q)"]
-            
-            best_row = (
-                candidates
-                .sort_values(["complexity", "AR(p)", "MA(q)"])
-                .iloc[0]
-            )
-            
-            best_rows.append(best_row)
-        
-        best = pd.DataFrame(best_rows)
+        best = (
+            arima_grid.dropna(subset=["AIC"]).sort_values("AIC").groupby("Series", as_index=False).first()
+        )
         st.subheader("Selected orders (min AIC)")
         st.dataframe(best, use_container_width=True)
 
         # Build ARIMA specs for original price series
-        arima_specs = {
-            row["Series"]: (int(row["AR(p)"]), 0, int(row["MA(q)"]))
-            for _, row in best.iterrows()
-        }
+        arima_specs = {}
+        for _, row in best.iterrows():
+            series = row["Series"]
+            base = series.replace("_diff", "")
+            arima_specs[base] = (int(row["AR(p)"]), 0, int(row["MA(q)"]))
   # Ensure we have an out_of_sample horizon consistent with the notebook split
         data_2_for_h = compute_rets(data)
         data_2_for_h.dropna(inplace=True)
@@ -611,31 +596,28 @@ def main():
         out_of_sample = data_2_for_h.loc[split_date:]
         H = len(out_of_sample)
 
-        st.subheader("ARIMA fits (on differenced prices)")
+        st.subheader("ARIMA fits")
         arima_fits = {}
-        
-        for series, order in arima_specs.items():
+        for stock, order in arima_specs.items():
             try:
-                model = ARIMA(data_diff[series], order=order)
-                arima_fits[series] = model.fit()
-                st.markdown(f"**{series} — order {order}**")
-                st.code(arima_fits[series].summary().as_text())
+                model = ARIMA(data[stock], order=order)
+                arima_fits[stock] = model.fit()
+                st.markdown(f"**{stock} — order {order}**")
+                st.code(arima_fits[stock].summary().as_text())
             except Exception as e:
-                st.warning(f"ARIMA failed for {series} with order {order}: {e}")
+                st.warning(f"ARIMA failed for {stock} with order {order}: {e}")
 
         if len(arima_fits) > 0:
             st.subheader("ARIMA residual diagnostics")
             arima_residual_diagnostics_all(arima_fits, lags=30, bins=30)
 
-            st.subheader("ARIMA forecasts (differenced series)")
-            diff_forecasts = {}
-            
-            for series, res in arima_fits.items():
+            st.subheader("ARIMA price forecasts (out-of-sample horizon)")
+            price_forecasts = {}
+            for stock, res in arima_fits.items():
                 fc = res.get_forecast(steps=H)
-                diff_forecasts[series] = fc.predicted_mean.to_numpy()
-            
-            diff_forecasts_df = pd.DataFrame(diff_forecasts)
-            st.dataframe(diff_forecasts_df.head(10), use_container_width=True)
+                price_forecasts[stock] = fc.predicted_mean.to_numpy()
+            price_forecasts_df = pd.DataFrame(price_forecasts, index=out_of_sample.index)
+            st.dataframe(price_forecasts_df.head(10), use_container_width=True)
 
 
 
